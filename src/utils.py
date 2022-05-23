@@ -12,7 +12,7 @@ from steamship.data.tags.tag import Tag
 from steamship.plugin.outputs.raw_data_plugin_output import RawDataPluginOutput
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random
 
-NOTION_PAGE_ID_REGEX = ".*/([A-Za-z0-9-]+)$"
+NOTION_PAGE_ID_REGEX = ".*/[A-Za-z0-9-]*([A-Za-z0-9-]{32})"
 NOTION_WORKSPACE_REGEX = "[A-Za-z0-9-]+"
 NOTION_URL_REGEX = f"https://www.({NOTION_WORKSPACE_REGEX}.notion.site||notion.so(/{NOTION_WORKSPACE_REGEX})?)/[A-Za-z0-9-]+$"
 
@@ -84,8 +84,8 @@ def validate_notion_url(url: str) -> str:
 def get_block_id(url: str) -> str:
     """Retrieves block ID from Notion URL (equivalent to page ID)."""
     block_id_match = re.search(NOTION_PAGE_ID_REGEX, url.lower().strip()).group(1)
-    if block_id_match is None or len(block_id_match) < 16:
+    if block_id_match is None:
         raise SteamshipError(
-            message=f"Page ID could not be parsed from provided `url`. `url` must end in unique identifier of length 16. Make sure provided url comes from shareable link."
+            message=f"Page ID could not be parsed from provided `url`. `url` must end in unique identifier of length 32. Make sure provided url comes from shareable link."
         )
     return url[-32:]
