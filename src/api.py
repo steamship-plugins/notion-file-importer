@@ -11,7 +11,7 @@ from steamship.plugin.inputs.file_import_plugin_input import FileImportPluginInp
 from steamship.plugin.outputs.raw_data_plugin_output import RawDataPluginOutput
 from steamship.plugin.service import PluginRequest
 
-from src.utils import get_block_id, call_notion, parse_blocks, validate_notion_url
+from src.utils import extract_block_id, notion_block_to_steamship_blocks, validate_notion_url
 
 
 class NotionFileImporterPlugin(FileImporter, App):
@@ -35,7 +35,7 @@ class NotionFileImporterPlugin(FileImporter, App):
             raise SteamshipError(message=f"Missing the `url` field in your FileImportPluginInput request. Got request: {request}")
         
         url = validate_notion_url(request.data.url)
-        steamship_blocks = asyncio.run(parse_blocks(block_id=get_block_id(url=url), apikey=self.config.get('apikey')))
+        steamship_blocks = asyncio.run(notion_block_to_steamship_blocks(block_id=extract_block_id(url=url), apikey=self.config.get('apikey')))
         steamship_block_json = File.CreateRequest(blocks=steamship_blocks)
 
         # All plugin responses must be wrapped in the PluginResponse object.

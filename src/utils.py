@@ -2,7 +2,7 @@ import asyncio
 import io
 import re
 from aiohttp import ClientSession
-from typing import Optional
+from typing import Dict, List, Optional
 from urllib.error import HTTPError
 
 import requests
@@ -10,7 +10,6 @@ from steamship import DocTag, TagKind, SteamshipError
 from steamship.data.block import Block
 from steamship.data.tags.tag import Tag
 from steamship.plugin.outputs.raw_data_plugin_output import RawDataPluginOutput
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random
 
 NOTION_PAGE_ID_REGEX = ".*/[A-Za-z0-9-]*([A-Za-z0-9-]{32})"
 NOTION_WORKSPACE_REGEX = "[A-Za-z0-9-]+"
@@ -21,7 +20,7 @@ def steamship_blockify(block: str) -> Block:
     # TODO: determine which notion blocks should be steamship blocks, tags, or both
     return block
 
-async def call_notion(url: str, session: ClientSession, headers: dict()):
+async def fetch_notion_json(url: str, session: ClientSession, headers: Dict) -> Dict:
     """Returns JSON formatted response to Notion API GET request."""
     valid_response = None
     while valid_response is None:
@@ -39,17 +38,17 @@ async def call_notion(url: str, session: ClientSession, headers: dict()):
                 valid_response = json_response
     return valid_response
 
-async def get_child_blocks(url: str, session: ClientSession, headers: dict()):
-    """Retrieves list of Notion Block JSON that are immediate children of block at url by iterating through paginated Notion API response."""
-    paginated_response = await call_notion(url=f"https://api.notion.com/v1/blocks/{block_id}/children", session=session, headers=headers)
+async def fetch_all_block_children(block_id: str, session: ClientSession, headers: Dict) -> List[Dict]:
+    """Retrieves list of all Notion Block JSON that are immediate children of block at url by iterating through paginated Notion API responses."""
+    paginated_response = await fetch_notion_json(url=f"https://api.notion.com/v1/blocks/{block_id}/children", session=session, headers=headers)
     all_children = paginated_response['results']
     while(paginated_response['has_more']):
         cursor = paginated_children['next_cursor']
-        paginated_response = await call_notion(url=f"https://api.notion.com/v1/blocks/{block_id}/children?next_cursor={cursor}", headers=headers)
+        paginated_response = await fetch_notion_json(url=f"https://api.notion.com/v1/blocks/{block_id}/children?next_cursor={cursor}", headers=headers)
         all_children.extend(paginated_response['results'])
     return all_children
 
-async def parse_blocks(block_id: str, apikey: str) -> list[Block]:
+async def notion_block_to_steamship_blocks(block_id: str, apikey: str) -> List[Block]:
     """Recursively parses Notion Blocks to build an aggregate list of Steamship Blocks."""
     async with ClientSession() as session:
         headers = {
@@ -57,13 +56,14 @@ async def parse_blocks(block_id: str, apikey: str) -> list[Block]:
             "Notion-Version": "2022-02-22",
             "Authorization": "Bearer {}".format(apikey)
         }
-        block = await call_notion(url=f"https://api.notion.com/v1/blocks/{block_id}", session=session, headers=headers)
+        block = await fetch_notion_json(url=f"https://api.notion.com/v1/blocks/{block_id}", session=session, headers=headers)
         steamship_blocks = [steamship_blockify(block)]
+        print(block)
         if block['has_children']:
-            children = await call_notion(url=f"https://api.notion.com/v1/blocks/{block_id}/children", session=session, headers=headers)
+            children = await fetch_all_block_children(block_id=block_id, session=session, headers=headers)
             tasks = []
-            for child in children['results']:
-                tasks.append(asyncio.ensure_future(parse_blocks(block_id=child['id'], apikey=apikey)))
+            for child in children:
+                tasks.append(asyncio.ensure_future(notion_block_to_steamship_blocks(block_id=child['id'], apikey=apikey)))
             results = await asyncio.gather(*tasks)
             for nested_blocks in results:
                 steamship_blocks.extend(nested_blocks)
@@ -81,8 +81,8 @@ def validate_notion_url(url: str) -> str:
             message=f"The provided `url` field did not match either of the following formats: https://www.notion.so/<workspace>/<pageid> or https://www.<workspace>.notion.site/<pageid>. Got url: {url}")
     return url
 
-def get_block_id(url: str) -> str:
-    """Retrieves block ID from Notion URL (equivalent to page ID)."""
+def extract_block_id(url: str) -> str:
+    """Extracts block ID from Notion URL (equivalent to page ID)."""
     block_id_match = re.search(NOTION_PAGE_ID_REGEX, url.lower().strip()).group(1)
     if block_id_match is None:
         raise SteamshipError(

@@ -39,7 +39,18 @@ task = File.create(client=client, url=url, plugin_instance=plugin_instance)
 
 ## Tagging Strategy
 
-TODO
+Notion pages have a natural, nested [block](https://developers.notion.com/reference/block) structure. This importer uses knowledge of Notion's block structure to extract Notion Block Format content.
+
+Outer-level headers and lists (i.e. Notion blocks whose parent is the page itself) logically partition Notion pages into Steamship blocks. All other outer-level Notion blocks and all inner-Notion-blocks are considered a continuation of the preceding Steamship block; their content is included in the Steamship block and they are added as Steamship Tags to the Steamship Block.
+
+Notion Blocks that begin a new Steamship block:
+- Outer-level headers (Heading 1, Heading 2, Heading 3)
+- Outer-level lists (Bulleted List, Numbered List, Toggled List)
+* Outer-level means the Notion Block's parent block is the Notion page to which it belongs 
+
+Notion Blocks that are a continuation of the preceding Steamship block:
+- Any inner-level Notion Block, i.e. blocks whose parent is not the Notion Page itself  
+- Any outer-level block that is not one of the blocks listed above
 
 ## Developing
 
