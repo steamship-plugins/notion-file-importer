@@ -11,14 +11,11 @@ from steamship.data.block import Block
 from steamship.data.tags.tag import Tag
 from steamship.plugin.outputs.raw_data_plugin_output import RawDataPluginOutput
 
+from src.notion_block import NotionBlock
+
 NOTION_PAGE_ID_REGEX = ".*/[A-Za-z0-9-]*([A-Za-z0-9-]{32})"
 NOTION_WORKSPACE_REGEX = "[A-Za-z0-9-]+"
 NOTION_URL_REGEX = f"https://www.({NOTION_WORKSPACE_REGEX}.notion.site||notion.so(/{NOTION_WORKSPACE_REGEX})?)/[A-Za-z0-9-]+$"
-
-def steamship_blockify(block: str) -> Block:
-    """Converts Notion Block JSON to Steamship Block."""
-    # TODO: determine which notion blocks should be steamship blocks, tags, or both
-    return block
 
 async def fetch_notion_json(url: str, session: ClientSession, headers: Dict) -> Dict:
     """Returns JSON formatted response to Notion API GET request."""
@@ -44,30 +41,62 @@ async def fetch_all_block_children(block_id: str, session: ClientSession, header
     all_children = paginated_response['results']
     while(paginated_response['has_more']):
         cursor = paginated_children['next_cursor']
-        paginated_response = await fetch_notion_json(url=f"https://api.notion.com/v1/blocks/{block_id}/children?next_cursor={cursor}", headers=headers)
+        paginated_response = await fetch_notion_json(url=f"https://api.notion.com/v1/blocks/{block_id}/children?next_cursor={cursor}", session=session, headers=headers)
         all_children.extend(paginated_response['results'])
     return all_children
 
+async def notion_block_to_steamship_content_and_tags(block_id: str, session: ClientSession, headers: Dict, block_json=None):
+    if block_json is None:
+        block_json = await fetch_notion_json(url=f"https://api.notion.com/v1/blocks/{block_id}", session=session, headers=headers)
+    notion_block_obj = NotionBlock(block_json=block_json)
+    text = notion_block_obj.get_block_text()
+    tags = [notion_block_obj.get_block_tag()]
+    if block_json['has_children']:
+        children = await fetch_all_block_children(block_id=block_id, session=session, headers=headers)
+        tasks = []
+        for child in children:
+            tasks.append(asyncio.ensure_future(notion_block_to_steamship_content_and_tags(block_id=child['id'], session=session, headers=headers)))
+        results = await asyncio.gather(*tasks)
+        for _, rec_text, rec_tags in results:
+            text += f"\n{rec_text}"
+            tags.extend(rec_tags)
+    return block_json, text, tags
+
 async def notion_block_to_steamship_blocks(block_id: str, apikey: str) -> List[Block]:
-    """Recursively parses Notion Blocks to build an aggregate list of Steamship Blocks."""
+    """Builds List of Steamship Blocks from Notion Page Block."""
     async with ClientSession() as session:
         headers = {
             "Accept": "application/json",
             "Notion-Version": "2022-02-22",
             "Authorization": "Bearer {}".format(apikey)
         }
-        block = await fetch_notion_json(url=f"https://api.notion.com/v1/blocks/{block_id}", session=session, headers=headers)
-        steamship_blocks = [steamship_blockify(block)]
-        print(block)
-        if block['has_children']:
+        page_parent_block = await fetch_notion_json(url=f"https://api.notion.com/v1/blocks/{block_id}", session=session, headers=headers)
+        steamship_blocks = []
+        curr_steamship_block = Block.CreateRequest(
+            text = f"{page_parent_block['child_page']['title']}\n",
+            tags = [
+                Tag.CreateRequest(kind=TagKind.doc, name="page") # TODO: need different TagKind
+            ]
+        )
+        if page_parent_block['has_children']:
             children = await fetch_all_block_children(block_id=block_id, session=session, headers=headers)
             tasks = []
             for child in children:
-                tasks.append(asyncio.ensure_future(notion_block_to_steamship_blocks(block_id=child['id'], apikey=apikey)))
+                tasks.append(asyncio.ensure_future(notion_block_to_steamship_content_and_tags(block_id=child['id'], session=session, headers=headers, block_json=child)))
             results = await asyncio.gather(*tasks)
-            for nested_blocks in results:
-                steamship_blocks.extend(nested_blocks)
+            for block_json, text, tags in results:
+                if NotionBlock.is_major_block_type(block_json=block_json):
+                    steamship_blocks.append(curr_steamship_block)
+                    curr_steamship_block = Block.CreateRequest(
+                        text = "",
+                        tags = []
+                    )
+                curr_steamship_block.text += text
+                curr_steamship_block.tags.extend(tags)
+        if curr_steamship_block.text or len(curr_steamship_block.tags) > 0:
+            steamship_blocks.append(curr_steamship_block)
         return steamship_blocks
+
 
 def validate_notion_url(url: str) -> str:
     """

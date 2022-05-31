@@ -36,6 +36,7 @@ class NotionFileImporterPlugin(FileImporter, App):
         
         url = validate_notion_url(request.data.url)
         steamship_blocks = asyncio.run(notion_block_to_steamship_blocks(block_id=extract_block_id(url=url), apikey=self.config.get('apikey')))
+        print(steamship_blocks)
         steamship_block_json = File.CreateRequest(blocks=steamship_blocks)
 
         # All plugin responses must be wrapped in the PluginResponse object.
