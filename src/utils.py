@@ -15,7 +15,6 @@ from src.notion_block import NotionBlock
 
 NOTION_PAGE_ID_REGEX = ".*/[A-Za-z0-9-]*([A-Za-z0-9-]{32})"
 NOTION_WORKSPACE_REGEX = "[A-Za-z0-9-]+"
-# NOTION_URL_REGEX = f"https://www.({NOTION_WORKSPACE_REGEX}.notion.site||notion.so(/{NOTION_WORKSPACE_REGEX})?)/[A-Za-z0-9-]*([A-Za-z0-9-]{32})$"
 NOTION_URL_REGEX = "https://www.([A-Za-z0-9-]+.notion.site||notion.so(/[A-Za-z0-9-]+)?)/[A-Za-z0-9-]*([A-Za-z0-9-]{32})$"
 
 async def fetch_notion_json(url: str, session: ClientSession, headers: Dict) -> Dict:

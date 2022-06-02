@@ -30,12 +30,13 @@ def _base64_decode(base64_message: str) -> str:
     return message_bytes.decode('utf8')
 
 @patch('src.utils.notion_block_to_steamship_blocks')
-async def test(mock_thing):
-    # importer = NotionFileImporterPlugin(config={"apikey": "dummy_api_key"})
-    # request = PluginRequest(data=FileImportPluginInput(url=URL))
-    # response = importer.run(request)
+def test(mock_thing):
+    importer = NotionFileImporterPlugin(config={"apikey": "<>"})
+    request = PluginRequest(data=FileImportPluginInput(url=URL))
+    response = importer.run(request)
     # assert(response.data.mimeType == MimeTypes.STEAMSHIP_BLOCK_JSON)
-
+    # print(response)
+    # assert 1 == 2
 
 
 

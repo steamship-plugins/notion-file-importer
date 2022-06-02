@@ -43,7 +43,7 @@ class NotionBlock:
         self.tag = Tag.CreateRequest(kind=TagKind.doc, name=self.type.value) # TODO: need different TagKind
 
     def is_major_block_type(self) -> bool:
-        """Returns true iff Notion Block type is one that, if a child of page block, begins a new Steamship Block."""
+        """Returns true iff Notion Block type is one that begins a new Steamship Block."""
         return self.type in [NotionBlock.Type.HEADING_1, NotionBlock.Type.HEADING_2, NotionBlock.Type.HEADING_3]
 
     def get_block_tag(self) -> str:
@@ -53,7 +53,7 @@ class NotionBlock:
         return self.text
 
     def _extract_block_text(self, block_type: Type, block_json: str) -> str:
-        """Returns text based on Notion Block type."""
+        """Returns text based on Notion Block type. For Notion Blocks that do not have text, an empty string is returned."""
         block_obj = block_json[block_json['type']]
         # get text from rich text
         if block_type in [NotionBlock.Type.HEADING_1, NotionBlock.Type.HEADING_2, NotionBlock.Type.HEADING_3,

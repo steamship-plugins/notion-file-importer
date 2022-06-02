@@ -44,11 +44,12 @@ Notion pages have a natural, nested [block](https://developers.notion.com/refere
 Outer-level headers (i.e. Notion block of type `header_x` whose parent is the page itself) logically partition Notion pages into Steamship blocks. All other outer-level Notion blocks and all inner-Notion-blocks are considered a continuation of the preceding Steamship block; their text content is included in the Steamship block and they are added as Steamship Tags to the Steamship Block.
 
 Notion Blocks that begin a new Steamship block:
+- The first Notion Block in a page
 - Outer-level header blocks (Heading 1, Heading 2, Heading 3)
 
 Notion Blocks that are a continuation of the preceding Steamship block:
 - Inner-level blocks of any type (i.e. blocks whose parent is *not* the Notion Page itself)
-- Outer-level blocks that are not of type header
+- Outer-level blocks that are not of type header and are not the first of the page
 
 ## Developing
 
