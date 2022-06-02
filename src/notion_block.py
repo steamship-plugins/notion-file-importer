@@ -37,13 +37,14 @@ class NotionBlock:
         UNSUPPORTED = "unsupported"
 
     def __init__(self, block_json):
+        """Initializes type and text of NotionBlock object from JSON. Does not set indices."""
         self.type = NotionBlock.Type[block_json['type'].upper()]
-        self.tag = Tag.CreateRequest(kind=TagKind.doc, name=self.type.value) # TODO: need different TagKind
         self.text = self._extract_block_text(block_type=self.type, block_json=block_json)
+        self.tag = Tag.CreateRequest(kind=TagKind.doc, name=self.type.value) # TODO: need different TagKind
 
-    def is_major_block_type(block_json: str) -> bool:
+    def is_major_block_type(self) -> bool:
         """Returns true iff Notion Block type is one that, if a child of page block, begins a new Steamship Block."""
-        return NotionBlock.Type[block_json['type'].upper()] in [NotionBlock.Type.HEADING_1, NotionBlock.Type.HEADING_2, NotionBlock.Type.HEADING_3]
+        return self.type in [NotionBlock.Type.HEADING_1, NotionBlock.Type.HEADING_2, NotionBlock.Type.HEADING_3]
 
     def get_block_tag(self) -> str:
         return self.tag

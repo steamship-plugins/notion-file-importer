@@ -47,7 +47,7 @@ Notion Blocks that begin a new Steamship block:
 - Outer-level header blocks (Heading 1, Heading 2, Heading 3)
 
 Notion Blocks that are a continuation of the preceding Steamship block:
-- Inner-level blocks of any type (i.e. blocks whose parent is not the Notion Page itself)
+- Inner-level blocks of any type (i.e. blocks whose parent is *not* the Notion Page itself)
 - Outer-level blocks that are not of type header
 
 ## Developing
@@ -86,7 +86,7 @@ All the code for this plugin is located in the `src/api.py` file:
 Tests are located in the `test/test_api.py` file. You can run them with:
 
 ```bash
-pytest
+% pytest --asyncio-mode=strict -vv
 ```
 
 We have provided sample data in the `test_data/` folder.
