@@ -6,6 +6,7 @@ import os
 import pytest
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
+from test import TEST_DATA
 
 from steamship import DocTag, TagKind, MimeTypes
 from steamship.app import Response
@@ -29,8 +30,14 @@ def _base64_decode(base64_message: str) -> str:
     message_bytes = base64.b64decode(base64_bytes)
     return message_bytes.decode('utf8')
 
-@patch('src.utils.notion_block_to_steamship_blocks')
-def test(mock_thing):
+def _get_test_file(filename: str):
+    async def load_mock(**kwargs):
+        with (TEST_DATA / filename).open('r') as config_file:
+            return json.load(config_file)
+    return load_mock
+
+@patch('src.utils.fetch_notion_json', _get_test_file("test_block_child_page_no_children.json"))
+def test():
     importer = NotionFileImporterPlugin(config={"apikey": "<>"})
     request = PluginRequest(data=FileImportPluginInput(url=URL))
     response = importer.run(request)
