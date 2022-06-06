@@ -1,30 +1,25 @@
-from aiohttp import ClientSession
-import base64
 import json
 import os
-import pytest
-import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-from steamship import DocTag, TagKind, MimeTypes, SteamshipError
-from steamship.app import Response
-from steamship.base.tasks import TaskState
+import pytest
+from aiohttp import ClientSession
+from steamship import TagKind, SteamshipError
 from steamship.data.block import Block
 from steamship.data.tags.tag import Tag
-from steamship.plugin.inputs.file_import_plugin_input import FileImportPluginInput
-from steamship.plugin.outputs.raw_data_plugin_output import RawDataPluginOutput
-from steamship.plugin.service import PluginRequest
 
-from src.api import NotionFileImporterPlugin
-from src.utils import extract_block_id, fetch_all_block_children, fetch_notion_json, notion_block_to_steamship_blocks, notion_block_to_steamship_content_and_tags, validate_notion_url
+from src.utils import extract_block_id, fetch_all_block_children, notion_block_to_steamship_blocks, \
+    notion_block_to_steamship_content_and_tags, validate_notion_url
 
 __copyright__ = "Steamship"
 __license__ = "MIT"
+
 
 def _read_test_file(filename: str) -> str:
     folder = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(folder, '..', 'test_data', filename), 'r') as f:
         return f.read()
+
 
 @pytest.mark.asyncio
 @patch('src.utils.fetch_notion_json')
@@ -35,7 +30,8 @@ async def test_fetch_all_block_children_no_children(mock_fetch_notion_json):
     }
     async with ClientSession() as session:
         all_children = await fetch_all_block_children(block_id="dummy", session=session, headers={})
-        assert(len(all_children) == 0)
+        assert (len(all_children) == 0)
+
 
 @pytest.mark.asyncio
 @patch('src.utils.fetch_notion_json')
@@ -47,8 +43,9 @@ async def test_fetch_all_block_children_has_childen_one_page(mock_fetch_notion_j
     }
     async with ClientSession() as session:
         all_children = await fetch_all_block_children(block_id="dummy", session=session, headers={})
-        assert(1 == len(all_children))
-        assert(child_json == all_children[0])
+        assert (1 == len(all_children))
+        assert (child_json == all_children[0])
+
 
 @pytest.mark.asyncio
 @patch('src.utils.fetch_notion_json')
@@ -61,17 +58,18 @@ async def test_fetch_all_block_children_has_childen_two_pages(mock_fetch_notion_
     mock_fetch_notion_json.side_effect = [{
         'results': first_results,
         'has_more': True,
-        'next_cursor' : 0,
-     },
-     {
-         'results': second_results,
-         'has_more': False,
-         'next_cursor': 100,
-     }
+        'next_cursor': 0,
+    },
+        {
+            'results': second_results,
+            'has_more': False,
+            'next_cursor': 100,
+        }
     ]
     async with ClientSession() as session:
         all_children = await fetch_all_block_children(block_id="dummy", session=session, headers={})
-        assert(101 == len(all_children))
+        assert (101 == len(all_children))
+
 
 @pytest.mark.asyncio
 @patch('src.utils.fetch_all_block_children')
@@ -86,6 +84,7 @@ async def test_notion_block_to_steamship_content_and_tags_singleton(mock_fetch_a
         )
         assert "This is my paragraph." == text[0]
         assert Tag.CreateRequest(kind=TagKind.doc, name="paragraph") == tags[0]
+
 
 @pytest.mark.asyncio
 @patch('src.utils.fetch_all_block_children')
@@ -105,6 +104,7 @@ async def test_notion_block_to_steamship_content_and_tags_one_child(mock_fetch_a
         assert ["Heading With Children", "This is my paragraph."] == text
         assert Tag.CreateRequest(kind=TagKind.doc, name="heading_1") == tags[0]
         assert Tag.CreateRequest(kind=TagKind.doc, name="paragraph") == tags[1]
+
 
 @pytest.mark.asyncio
 @patch('src.utils.fetch_notion_json')
@@ -160,24 +160,29 @@ def test_validate_notion_url_ill_formatted_id():
     with pytest.raises(SteamshipError, match="`url` field did not match"):
         validate_notion_url(url="https://www.notion.so/steamship/123")
 
+
 def test_validate_notion_url_ill_formatted_domain():
     with pytest.raises(SteamshipError, match="`url` field did not match"):
         validate_notion_url(url="https://www.notion.com/steamship/Quick-Note-8a7ddc57165549a88da4c073c214ffb9")
+
 
 def test_validate_notion_url_well_formatted():
     url = "https://www.notion.so/steamship/test-8a7ddc57165549a88da4c073c214ffb9"
     validated_url = validate_notion_url(url=url)
     assert validated_url == url
 
+
 def test_validate_notion_url_well_formatted_no_workspace():
     url = "https://www.notion.so/test-8a7ddc57165549a88da4c073c214ffb9"
     validated_url = validate_notion_url(url=url)
     assert validated_url == url
 
+
 def test_extract_block_id_ill_formatted():
     with pytest.raises(SteamshipError, match="Page ID could not be parsed"):
         extract_block_id(url="https://www.notion.so/steamship/123")
 
+
 def test_extract_block_id_well_formatted():
     block_id = extract_block_id(url=f"https://www.notion.so/steamship/test-8a7ddc57165549a88da4c073c214ffb9")
-    assert("8a7ddc57165549a88da4c073c214ffb9"==block_id)
+    assert ("8a7ddc57165549a88da4c073c214ffb9" == block_id)

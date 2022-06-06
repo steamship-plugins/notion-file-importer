@@ -3,9 +3,12 @@ from enum import Enum
 from steamship import DocTag, TagKind, SteamshipError
 from steamship.data.tags.tag import Tag
 
+
 class NotionBlock:
+    NotionTagType = "notion"
+
     class Type(Enum):
-        HEADING_1 = "heading_1" 
+        HEADING_1 = "heading_1"
         HEADING_2 = "heading_2" 
         HEADING_3 = "heading_3" 
         PARAGRAPH = "paragraph"
@@ -40,13 +43,13 @@ class NotionBlock:
         """Initializes type and text of NotionBlock object from JSON. Does not set indices."""
         self.type = NotionBlock.Type[block_json['type'].upper()]
         self.text = self._extract_block_text(block_type=self.type, block_json=block_json)
-        self.tag = Tag.CreateRequest(kind=TagKind.doc, name=self.type.value) # TODO: need different TagKind
+        self.tag = Tag.CreateRequest(kind=self.NotionTagType, name=self.type.value) # TODO: need different TagKind
 
     def is_major_block_type(self) -> bool:
         """Returns true iff Notion Block type is one that begins a new Steamship Block."""
         return self.type in [NotionBlock.Type.HEADING_1, NotionBlock.Type.HEADING_2, NotionBlock.Type.HEADING_3]
 
-    def get_block_tag(self) -> str:
+    def get_block_tag(self) -> Tag.CreateRequest:
         return self.tag
     
     def get_block_text(self) -> str:

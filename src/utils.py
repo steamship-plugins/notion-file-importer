@@ -26,11 +26,11 @@ async def fetch_notion_json(url: str, session: ClientSession, headers: Dict) -> 
             if 'error' in json_response:
                 status_code = response.status
                 if status_code == 401 or status_code == 403:
-                    raise SteamshipError(message='Cannot authorize with Notion', internalMessage=f'Notion returned error: {json_response["error"]}')
+                    raise SteamshipError(message='Cannot authorize with Notion', internal_message=f'Notion returned error: {json_response["error"]}')
                 elif status_code == 429:
-                    raise SteamshipError(message='Hitting Notion Request Limit', internalMessage=f'Notion returned error: {json_response["error"]}')
+                    raise SteamshipError(message='Hitting Notion Request Limit', internal_message=f'Notion returned error: {json_response["error"]}')
                 else:
-                    raise SteamshipError(message='Unable to query Notion', internalMessage=f'Notion returned error: {json_response["error"]}')
+                    raise SteamshipError(message='Unable to query Notion', internal_message=f'Notion returned error: {json_response["error"]}')
             else:
                 valid_response = json_response
     return valid_response
@@ -45,7 +45,7 @@ async def fetch_all_block_children(block_id: str, session: ClientSession, header
         all_children.extend(paginated_response['results'])
     return all_children
 
-async def notion_block_to_steamship_content_and_tags(block_json: str, session: ClientSession, headers: Dict):
+async def notion_block_to_steamship_content_and_tags(block_json: dict, session: ClientSession, headers: Dict):
     """Returns NotionBlock with lists of text and tags (omitting start/stop indices) aggregated from descendant blocks."""
     notion_block_obj = NotionBlock(block_json=block_json)
     text = [notion_block_obj.get_block_text()]
@@ -61,7 +61,7 @@ async def notion_block_to_steamship_content_and_tags(block_json: str, session: C
             tags.extend(rec_tags)
     return notion_block_obj, text, tags
 
-async def notion_block_to_steamship_blocks(block_id: str, apikey: str) -> List[Block]:
+async def notion_block_to_steamship_blocks(block_id: str, apikey: str) -> List[Block.CreateRequest]:
     """Builds List of Steamship Blocks from Notion Page Block."""
     async with ClientSession() as session:
         headers = {

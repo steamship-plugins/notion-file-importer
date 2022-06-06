@@ -42,18 +42,5 @@ class NotionFileImporterPlugin(FileImporter, App):
         # All plugin responses must be wrapped in the PluginResponse object.
         return Response(data=RawDataPluginOutput(json=steamship_block_json, mime_type=MimeTypes.STEAMSHIP_BLOCK_JSON))
 
-    @post('/import_file')
-    def import_file(self, **kwargs) -> Response[RawDataPluginOutput]:
-        """HTTP endpoint for our plugin.
-
-        When deployed and instantiated in a Space, this endpoint will be served at:
-
-        https://{username}.steamship.run/{space_id}/{plugin_instance_id}/import_file
-
-        When adapting this template, you can almost always leave the below code unchanged.
-        """
-        request = FileImporter.parse_request(request=kwargs)
-        return self.run(request)
-
 
 handler = create_handler(NotionFileImporterPlugin)
