@@ -6,8 +6,8 @@ from steamship import MimeTypes, File, Tag, DocTag, TagKind
 from steamship.plugin.inputs.file_import_plugin_input import FileImportPluginInput
 from steamship.plugin.service import PluginRequest
 
-from notion_block import NotionBlock
 from src.api import NotionFileImporterPlugin
+from src.notion_block import NotionBlock
 from test import TEST_DATA
 
 __copyright__ = "Steamship"
@@ -47,7 +47,7 @@ def test():
     assert len(file.blocks) == 1
 
     # It has the right text
-    assert file.blocks[0].text == "Child Page\n"
+    assert file.blocks[0].text == "Child Page"
 
     # It has the right file tags
     assert file.tags is None
@@ -55,7 +55,6 @@ def test():
     # The block has the right block tags
     assert len(file.blocks[0].tags) == 1
     tag = file.blocks[0].tags[0]
-    assert tag.kind == TagKind.doc
+    assert tag.kind == NotionBlock.NotionTagType
     assert tag.name == DocTag.page
     assert file.blocks[0].text[tag.start_idx:tag.end_idx] == "Child Page"
-

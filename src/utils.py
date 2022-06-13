@@ -49,7 +49,7 @@ async def notion_block_to_steamship_content_and_tags(block_json: dict, session: 
     """Returns NotionBlock with lists of text and tags (omitting start/stop indices) aggregated from descendant blocks."""
     notion_block_obj = NotionBlock(block_json=block_json)
     text = [notion_block_obj.get_block_text()]
-    tags = [notion_block_obj.get_block_tag()]
+    tags = notion_block_obj.get_block_tags()
     if block_json['has_children']:
         children = await fetch_all_block_children(block_id=block_json['id'], session=session, headers=headers)
         tasks = []
@@ -73,9 +73,9 @@ async def notion_block_to_steamship_blocks(block_id: str, apikey: str) -> List[B
         steamship_blocks = []
         title = page_parent_block['child_page']['title']
         curr_steamship_block = Block.CreateRequest(
-            text = f"{title}\n",
+            text = f"{title}",
             tags = [
-                Tag.CreateRequest(kind=TagKind.doc, name="page", startIdx=0, endIdx=len(title)) # TODO: need different TagKind
+                Tag.CreateRequest(kind=NotionBlock.NotionTagType, name="page", start_idx=0, end_idx=len(title))
             ]
         )
         if page_parent_block['has_children']:
@@ -92,11 +92,17 @@ async def notion_block_to_steamship_blocks(block_id: str, apikey: str) -> List[B
                         tags = []
                     )
                 for txt, tg in zip(text, tags):
-                    text_to_append = f"\n{txt}" if txt else ""
-                    tg.startIdx = len(curr_steamship_block.text)
-                    tg.endIdx = tg.startIdx + len(text_to_append)
-                    curr_steamship_block.text += text_to_append
-                    curr_steamship_block.tags.append(tg)
+                    if txt:
+                        if curr_steamship_block.text:
+                            text_to_append = f" {txt}"
+                            # add one to omit added whitespace from tag
+                            tg.start_idx = len(curr_steamship_block.text) + 1
+                        else:
+                            text_to_append = txt
+                            tg.start_idx = len(curr_steamship_block.text)
+                        curr_steamship_block.text += text_to_append
+                        tg.end_idx = len(curr_steamship_block.text)
+                        curr_steamship_block.tags.append(tg)
         if curr_steamship_block.text or len(curr_steamship_block.tags) > 0:
             steamship_blocks.append(curr_steamship_block)
         return steamship_blocks

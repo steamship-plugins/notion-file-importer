@@ -8,6 +8,7 @@ from steamship import TagKind, SteamshipError
 from steamship.data.block import Block
 from steamship.data.tags.tag import Tag
 
+from src.notion_block import NotionBlock
 from src.utils import extract_block_id, fetch_all_block_children, notion_block_to_steamship_blocks, \
     notion_block_to_steamship_content_and_tags, validate_notion_url
 
@@ -83,7 +84,7 @@ async def test_notion_block_to_steamship_content_and_tags_singleton(mock_fetch_a
             headers={}
         )
         assert "This is my paragraph." == text[0]
-        assert Tag.CreateRequest(kind=TagKind.doc, name="paragraph") == tags[0]
+        assert Tag.CreateRequest(kind=NotionBlock.NotionTagType, name="paragraph", start_idx=0, end_idx=21) == tags[0]
 
 
 @pytest.mark.asyncio
@@ -102,8 +103,8 @@ async def test_notion_block_to_steamship_content_and_tags_one_child(mock_fetch_a
         assert 2 == len(text)
         assert 2 == len(tags)
         assert ["Heading With Children", "This is my paragraph."] == text
-        assert Tag.CreateRequest(kind=TagKind.doc, name="heading_1") == tags[0]
-        assert Tag.CreateRequest(kind=TagKind.doc, name="paragraph") == tags[1]
+        assert Tag.CreateRequest(kind=NotionBlock.NotionTagType, name="heading_1", start_idx=0, end_idx=21) == tags[0]
+        assert Tag.CreateRequest(kind=NotionBlock.NotionTagType, name="paragraph", start_idx=0, end_idx=21) == tags[1]
 
 
 @pytest.mark.asyncio
@@ -117,12 +118,12 @@ async def test_notion_block_to_steamship_blocks_singleton(mock_fetch_notion_json
         )
         assert 1 == len(blocks)
         tags = [Tag.CreateRequest(
-            kind=TagKind.doc,
+            kind=NotionBlock.NotionTagType,
             name="page",
-            startIdx=0,
-            endIdx=10
+            start_idx=0,
+            end_idx=10
         )]
-        assert Block.CreateRequest(text="Child Page\n", tags=tags) == blocks[0]
+        assert Block.CreateRequest(text="Child Page", tags=tags) == blocks[0]
 
 
 @pytest.mark.asyncio
@@ -139,20 +140,20 @@ async def test_notion_block_to_steamship_blocks_children(mock_fetch_all_block_ch
         assert 1 == len(blocks)
         tags = [
             Tag.CreateRequest(
-                kind=TagKind.doc,
+                kind=NotionBlock.NotionTagType,
                 name="page",
-                startIdx=0,
-                endIdx=10
+                start_idx=0,
+                end_idx=10
             ),
             Tag.CreateRequest(
-                kind=TagKind.doc,
+                kind=NotionBlock.NotionTagType,
                 name="bookmark",
-                startIdx=11,
-                endIdx=115
+                start_idx=11,
+                end_idx=114
             )
         ]
         assert Block.CreateRequest(
-            text="Child Page\n\nhttps://www.nytimes.com/2018/03/12/travel/havana-cuba.html?rref=collection%2Fsectioncollection%2Ftravel",
+            text="Child Page https://www.nytimes.com/2018/03/12/travel/havana-cuba.html?rref=collection%2Fsectioncollection%2Ftravel",
             tags=tags) == blocks[0]
 
 
