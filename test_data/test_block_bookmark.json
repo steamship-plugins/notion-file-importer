@@ -1,0 +1,23 @@
+{
+    "object":"block",
+    "id":"7509c16e-f68b-4323-a549-3c397d60b567",
+    "created_time":"2021-09-28T16:00:00.000Z",
+    "last_edited_time":"2021-09-28T16:00:00.000Z",
+    "created_by":{
+       "object":"user",
+       "id":"08964c48-7696-4cbe-b39e-00c7f77b8b5f"
+    },
+    "last_edited_by":{
+       "object":"user",
+       "id":"08964c48-7696-4cbe-b39e-00c7f77b8b5f"
+    },
+    "has_children":false,
+    "archived":false,
+    "type":"bookmark",
+    "bookmark":{
+       "caption":[
+          
+       ],
+       "url":"https://www.nytimes.com/2018/03/12/travel/havana-cuba.html?rref=collection%2Fsectioncollection%2Ftravel"
+    }
+ }
